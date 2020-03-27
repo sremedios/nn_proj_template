@@ -20,7 +20,7 @@ def show_progbar(
     # write template
     TEMPLATE = (
         "\r{}Epoch {:3d}/{} [{:{}<{}}] "
-        "Loss: {:>3.4f} Acc: {:.2%}" 
+        "Loss: {:>3.4f} Acc: {:.2%} " 
         " |  "
         "{:.2f}s / it | "
         "ETA: {:.1f}s | "

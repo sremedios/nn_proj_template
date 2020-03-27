@@ -1,12 +1,12 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sys
-import shutil
 import time
+import json
+from pathlib import Path
 
 import numpy as np
 import tensorflow as tf
-from pathlib import Path
 
 from utils.forward import *
 from utils.progbar import *
@@ -17,7 +17,7 @@ def running_average(old_average, cur_val, n):
     return old_average * (n-1)/n + cur_val/n
 
 if __name__ == '__main__':
-    N_EPOCHS = 10000
+    N_EPOCHS = 100
     BATCH_SIZE = 2**10
     BUFFER_SIZE = BATCH_SIZE * 2
     TARGET_SHAPE = (28, 28, 1)
@@ -27,7 +27,7 @@ if __name__ == '__main__':
     test_color_code = "\033[0;37m"
     ds = 1
     CONVERGENCE_EPOCH_LIMIT = 10
-    epsilon = 1e-4
+    epsilon = 1e-3
     best_val_loss = 100000
     convergence_epoch_counter = 0
     progbar_length = 5
@@ -37,6 +37,7 @@ if __name__ == '__main__':
     opt = tf.optimizers.Adam(learning_rate=learning_rate)
     MODEL_NAME = "small_cnn"
     WEIGHT_DIR = Path("models/weights") / MODEL_NAME
+    MODEL_PATH = WEIGHT_DIR / (MODEL_NAME + ".json")
     RESULTS_DIR = Path("results") / MODEL_NAME
     TRAIN_CURVE_FILENAME = RESULTS_DIR / "training_curve.csv"
     TEST_PRED_FILENAME = RESULTS_DIR / "test_preds.csv"
@@ -46,6 +47,9 @@ if __name__ == '__main__':
             d.mkdir(parents=True)
 
     model = tinynet(ds=8, num_outputs=10, shape=TARGET_SHAPE)
+    with open(str(MODEL_PATH), 'w') as f:
+        json.dump(model.to_json(), f)
+    
 
     ##### LOAD DATA #####
     (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
@@ -175,7 +179,7 @@ if __name__ == '__main__':
                     N_EPOCHS, 
                     BATCH_SIZE,
                     cur_step,
-                    len(x_val),
+                    len(x_test),
                     val_loss.result(),
                     val_accuracy.result(),
                     val_color_code,
@@ -209,15 +213,15 @@ if __name__ == '__main__':
             ))
             break
         
-        if val_loss_total.result() > best_val_loss and\
-                np.abs(val_loss_total.result() - best_val_loss) > epsilon:
+        if val_loss.result() > best_val_loss and\
+                np.abs(val_loss.result() - best_val_loss) > epsilon:
             convergence_epoch_counter += 1
         else:
             convergence_epoch_counter = 0
 
-        if val_loss_total.result() < best_val_loss:
+        if val_loss.result() < best_val_loss:
             best_epoch = cur_epoch + 1
-            best_val_loss = val_loss_total.result() 
+            best_val_loss = val_loss.result() 
             model.save_weights(
                 str(WEIGHT_DIR / "best_weights.h5")
             )
