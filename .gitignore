@@ -1,6 +1,7 @@
 # nn
 **/weights/*
 *.hdf5
+*.h5
 data/
 
 # Byte-compiled / optimized / DLL files
